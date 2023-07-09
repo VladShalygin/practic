@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Управление машинами</title>
+    <style>
+        /* Стилизация списка машин */
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* Стилизация кнопок */
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+            margin: 0 10px;
+
+        }
+
+        .button.disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Управление машинами</h1>
+    <ul id="car-list"></ul>
+
+    <script>
+        // Функция для обновления списка машин
+        // Функция для обновления списка машин
+        function updateCarList() {
+            fetch('http://localhost:52378/getCars')
+                .then(response => response.json())
+                .then(data => {
+                    const carList = document.getElementById('car-list');
+                    carList.innerHTML = '';
+                    data.cars?.forEach(car => {
+                        const li = document.createElement('li');
+                        const carName = document.createElement('span');
+                        carName.innerText = car.car_number;
+                        li.appendChild(carName);
+
+                        const enableButton = document.createElement('button');
+                        enableButton.className = 'button';
+                        enableButton.innerText = 'Включить';
+                        enableButton.addEventListener('click', () => {
+                            enableButton.disabled = true;
+                            disableButton.disabled = false;
+                            sendRequest('on', car.tracker_id );
+                        });
+                        li.appendChild(enableButton);
+
+                        const disableButton = document.createElement('button');
+                        disableButton.className = 'button';
+                        disableButton.innerText = 'Отключить';
+                        disableButton.addEventListener('click', () => {
+                            disableButton.disabled = true;
+                            enableButton.disabled = false;
+                            sendRequest('off', car.tracker_id );
+                        });
+                        li.appendChild(disableButton);
+
+                        carList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error(error));
+        }
+
+        // Функция для отправки запроса на сервер с указанным состоянием
+        function sendRequest(command, tracker_id) {
+            const endpoint = 'http://localhost:52378/changeCarPower';
+            const method = 'POST';
+            const body = JSON.stringify({ command: command, tracker_id: tracker_id });
+
+            fetch(endpoint, {
+                method: method,
+                body: body,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    showToast('Запрос успешно выполнен');
+                } else {
+                    showToast('Ошибка при выполнении запроса');
+                }
+            })
+            .catch(error => console.error(error));
+        }
+
+        // Функция для отображения уведомления
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        }
+        // Обновление списка машин каждые 20 секунд
+        setInterval(updateCarList, 20000);
+
+        // Начальное обновление списка машин
+        updateCarList();
+    </script>
+</body>
+</html>
